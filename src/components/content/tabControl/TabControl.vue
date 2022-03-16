@@ -27,7 +27,8 @@
     },
     methods: {
       itemClick(index) {
-        this.currentIndex = index
+        this.currentIndex = index,
+        this.$emit('tabClick', index)
       }
     }
   }
@@ -40,6 +41,7 @@
     height: 44px;
     line-height: 44px;     /* 文字垂直居中 */
     font-size: 15px;
+    background-color: #fff;
   }
   .tab-control-item {
     flex: 1;

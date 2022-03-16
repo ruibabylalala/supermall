@@ -7,6 +7,15 @@ export function getMultidata() {
   })
 }
 
+export function getHomeGoods(type, page) {
+  return request({
+    url: '/home/data',
+    params: {
+      type,
+      page
+    }
+  })
+}
 // 假如有多个不同的url
 
 
@@ -18,3 +27,16 @@ export function getMultidata() {
 // }
 
 // test()
+
+// 如何直接把一个数组放进另一个数组里
+// const totalNums = []
+// const nums1 = [12, 10, 22]
+// const nums2 = [55, 44, 33]
+// 方法一
+// for(let n of nums1) {
+//   totalNums.push(n)
+// }
+// 方法二 ES6新增语法
+// ...语法，将数组里所有的元素依次解析，依次塞到totalNums里去
+// 其实是利用了push函数。push函数可以传一个可变的参数
+// totalNums.push(...nums1)
