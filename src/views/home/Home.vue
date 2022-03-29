@@ -3,20 +3,32 @@
     <!-- <nav-bar>     已废弃但未移出的语法
       <div slot="center">购物街</div>
     </nav-bar> -->
-    <nav-bar class="home-nav">
       <!-- 具名插槽使用 新语法 -->
-      <template v-slot:center>购物节</template> 
-    </nav-bar>
-
-    <home-swiper :banners="banners"/>
-    <recommend-view :recommends="recommends"/>
-    <feature-view/>
+    <nav-bar class="home-nav"><template v-slot:center>购物节</template></nav-bar>
     <tab-control :titles="['流行', '新款', '精选']"  
-                  class="tab-control" 
-                  @tabClick="tabClick"/>
-    <!-- <goods-list :goods="goods[currentType].list"/>  这里代码有点太长了，可以使用一个计算属性 -->
-    <goods-list :goods="showGoods"/> 
-
+                    ref='tabControl1'
+                    class="tab-control"  
+                    v-show="isTabFixed"
+                    @tabClick="tabClick"/>
+    <scroll class="content" 
+            ref="scroll" 
+            :probe-type='3' 
+            @scrollPosition='contentScroll'
+            :pull-up-load='true'
+            @pullingUpMore='loadMore'>
+      <home-swiper :banners="banners"
+                    @swiperImageLoad='swiperImageLoad'/>
+      <recommend-view :recommends="recommends"/>
+      <feature-view />
+      <tab-control :titles="['流行', '新款', '精选']"  
+                    ref='tabControl2'  
+                    @tabClick="tabClick"/>
+      <!-- <goods-list :goods="goods[currentType].list"/>  这里代码有点太长了，可以使用一个计算属性 -->
+      <goods-list :goods="showGoods"/>
+    </scroll> 
+    <!-- 组件不能直接监听点击 -->
+    <!-- <back-top @click="backClick"/> -->
+    <back-top @click.native="backClick" v-show='isShowBackTop'></back-top>
   </div>
 </template>
 
@@ -30,12 +42,12 @@
   import NavBar from 'components/common/navbar/NavBar'
   import TabControl from 'components/content/tabControl/TabControl'
   import GoodsList from 'components/content/goods/GoodsList'
-
+  import Scroll from 'components/common/scroll/Scroll'
+  import BackTop from 'components/content/backTop/BackTop'
 
   // 导入的方法
   import { getMultidata, getHomeGoods } from "network/home";
-
-
+  import { debounce } from 'common/utils.js'
   export default {
     name: "Home",
     components: {
@@ -44,7 +56,9 @@
       FeatureView,
       NavBar,
       TabControl,
-      GoodsList
+      GoodsList,
+      Scroll,
+      BackTop,
     },
     data() {
       return {
@@ -56,7 +70,11 @@
           'new': {page: 0, list: []},
           'sell': {page: 0, list: []}
         },
-        currentType: 'pop'
+        currentType: 'pop',
+        isShowBackTop: false,
+        tabOffsetTop: 0,
+        isTabFixed: false,
+        saveY: 0
       }
     },
     computed: {
@@ -96,12 +114,39 @@
     created() {
       // 1. 请求多个数据
       this.getMultidata()
-
       // 2. 请求多个数据
       this.getHomeGoods('pop')
       this.getHomeGoods('new')
       this.getHomeGoods('sell')
+      
     },
+    mounted() {
+      // 1. 监听item中图片加载完成
+      const refresh = debounce(this.$refs.scroll.refresh, 100)
+
+      this.$bus.$on('itemImageLoad', () => {
+        // console.log('-------');
+        // 这样写refresh调用非常频繁
+        // this.$refs.scroll.refresh()
+
+        // 使用防抖函数
+        refresh() 
+      })
+    },
+    // 解决better-scroll1.x版本无法保持原位置的bug.
+    // 发现手机上2.x版本无法保持原位置
+    activated() { 
+      // refresh() 要放在scrollTo上面才不会报错
+      this.$refs.scroll.refresh()   
+      this.$refs.scroll.scrollTo1(0, this.saveY, 0)
+    },
+    deactivated() {
+      // this.saveY = this.$refs.scroll.scroll.y
+      this.saveY = this.$refs.scroll.getScrollY()
+    }, 
+    destroyed() {
+      console.log("home destroyed");
+    }, 
     methods: {
       // 事件监听相关的方法
       tabClick(index) {
@@ -112,13 +157,39 @@
             break
           case 1:
             this.currentType = 'new'
-            break
+            break        
           case 2:
             this.currentType = 'sell'
             break
         }
+
+        this.$refs.tabControl1.currentIndex = index
+        this.$refs.tabControl2.currentIndex = index
+      },
+      backClick() {
+        // console.log('返回顶部');
+        // this.$refs.scroll.scroll.scrollTo(0, 0, 500)
+        this.$refs.scroll.scrollTo1(0, 0, 500)
+      },
+      contentScroll(position) {
+        // console.log(position);
+        // 1. 判断BackTop是否显示
+        this.isShowBackTop = -(position.y) > 1000
+
+        // 2. 决定TabControl是否吸顶
+        this.isTabFixed = (-position.y) > this.tabOffsetTop
+      },
+      loadMore() {
+        this.getHomeGoods(this.currentType)
+        this.$refs.scroll.scroll.refresh()
       },
 
+      // 2. 获取tabControl的offsetTop
+      swiperImageLoad() {
+      // 所有的组件都有一个属性：$el，用于获取组件中的元素
+        this.tabOffsetTop = this.$refs.tabControl2.$el.offsetTop
+        console.log(this.tabOffsetTop);
+      },
 
       // 网络请求相关的方法
       getMultidata() {
@@ -137,30 +208,52 @@
         getHomeGoods(type, page).then(res => {
           this.goods[type].list.push(...res.data.list)
           this.goods[type].page += 1  //拿到数据后，要把页面更新一下
+
+          // 这样写代码有点太长，所以在Scroll.vue中再对finishPullUp进行一下封装
+          // this.$refs.scroll.scroll.finishPullUp()
+          this.$refs.scroll.finishPullUp()
         })
       }
     }
   };
 </script>
 
-<style>
+<style scoped>
   #home {
-    height: 3000px;
+    /* height: 3000px; */
+    height: 100vh; 
+    position: relative;
   }
-
   .home-nav {
     color: white;
     background-color: pink;
     box-shadow: 0 1px 1px rgba(100, 100, 100, .1);
 
-    position: sticky;
+    /* 在使用浏览器原生滚动时，为了让导航不跟随一起滚动 */
+    /* position: sticky;
     top: 0;
-    z-index: 1000
+    z-index: 9 */
+  }
+
+  /* 在使用bscroll后，原生sticky无法实现吸顶了 */
+  /* 2018年的时候这个属性在浏览器端兼容性不好，移动端兼容性不错 */
+  /* .tab-control {
+    position: sticky;   
+     top: 44px;         
+    z-index: 9
+  } */
+  .content {
+    height: calc(100% - 93px);
+    overflow: hidden;
+
+    position: absolute;
+    top: 44px;
+
   }
 
   .tab-control {
-    position: sticky;   /* 2018年的时候这个属性在浏览器端兼容性不好，移动端兼容性不错 */
-    top: 44px;          /* 2022年兼容性应该差不多了 */
-    z-index: 9
+    position: relative;
+    z-index: 9;
   }
+
 </style>

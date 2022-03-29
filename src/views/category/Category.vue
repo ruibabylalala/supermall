@@ -1,5 +1,9 @@
 <template>
   <div class="wrapper">
+      <!-- 1. 无论是否设置click: true，button都可以点击 -->
+      <button @click='btnClick'>按钮</button>
+      <!-- 2. 必须设置click: true，div才能监听点击 -->
+      <div @click='divClick'>哈哈哈哈</div>
     <ul class="content">
       <li>分级列表1</li>
       <li>分级列表2</li>
@@ -109,15 +113,40 @@
   import BScroll from 'better-scroll'
   export default {
     name: 'Category',
+    data() {
+      return {
+        scroll: null
+      }
+    },
+    methods: {
+      btnClick() {
+        console.log('点击按钮');
+      },
+      divClick() {
+        console.log('点击div');
+      }
+    },
     mounted() {
-      new BScroll('.wrapper', {
-
+      this.scroll = new BScroll('.wrapper', {
+        probeType: 3,
+        pullUpLoad: true,
+        click: true
       })
+   
+      // 2. 上拉加载更多
+      this.scroll.on('pullingUp', () => {
+        console.log('上拉加载更多');
+      })
+
+      // 1. 实时监听位置
+      // this.scroll.on('scroll', (position) => {
+      //   console.log(position);
+      // })
     }
   }
 </script>
 
-<style>
+<style scoped>
   /* 原生实现 */
   /* .content {
     height: 150px;
