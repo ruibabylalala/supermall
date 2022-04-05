@@ -226,7 +226,7 @@
   }
   .home-nav {
     color: white;
-    background-color: pink;
+    background-color: var(--color-tint);
     box-shadow: 0 1px 1px rgba(100, 100, 100, .1);
 
     /* 在使用浏览器原生滚动时，为了让导航不跟随一起滚动 */

@@ -52,8 +52,8 @@ import BScroll from 'better-scroll'
       // 1. 创建BBScroll对象
       // vue中，如果想明确的拿到某一个元素，可以通过给这个元素设置一个 ref属性。
       this.scroll = new BScroll(this.$refs.wrapper, {
-        // observeDOM: true,
-        // observeImage: true,
+        observeDOM: true,
+        observeImage: true,
         click: true,
         probeType: this.probeType,
         pullUpLoad: this.pullUpLoad,
