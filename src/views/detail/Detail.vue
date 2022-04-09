@@ -14,6 +14,9 @@
 
     <detail-bottom-bar @addCart='addToCart'/>
     <back-top @click.native="backClick" v-show='isShowBackTop'></back-top>
+
+    <toast :message='message' :show='show'></toast>
+    
   </div>
   
 </template>
@@ -31,10 +34,13 @@
   import Scroll from 'components/common/scroll/Scroll'
   import GoodsList from 'components/content/goods/GoodsList'
   // import BackTop from 'components/content/backTop/BackTop'
+  import Toast from 'components/common/toast/Toast'
 
   import {getDetail, getRecommend, Goods, Shop, GoodsParam} from 'network/detail.js'
   import {backTopMixin} from 'common/mixins.js'
 
+  import {mapActions} from 'vuex'
+ 
   export default {
     name: 'Detail',
     components: {
@@ -49,6 +55,7 @@
       Scroll,
       GoodsList,
       // BackTop
+      Toast
     },
     mixins: [backTopMixin],
     data() {
@@ -64,6 +71,8 @@
         themeTopY:[],
         currentIndex: 0,
         // isShowBackTop: false
+        message: '',
+        show: false
       }
     },
     created() {
@@ -146,6 +155,12 @@
       // console.log(this.themeTopY);
     },
     methods: {
+      ...mapActions(['addCart']),  //数组形式
+      // 对象形式，指定别名 
+      // ...mapActions({
+      //   add: 'addCart'
+      // }),
+
       // 详情图片加载完之后刷新
       imageLoad() {
         this.$refs.scroll.refresh()
@@ -232,11 +247,27 @@
         product.desc = this.goods.desc
         product.price = this.goods.realPrice
         product.iid = this.iid
-
         // 2. 将商品添加到购物车中
         // this.$store.state.push(product)   //这种方法不可以，修改store中的state的唯一途径是mutations
         // this.$store.commit('addCart', product)
-        this.$store.dispatch('addCart', product)   // 通过actions
+
+        // 通过actions
+        // this.$store.dispatch('addCart', product).then(res => {
+        //   console.log(res);
+        // })   
+
+        // 使用mapActions
+        this.addCart(product).then(res => {
+          // this.show = true;
+          // this.message = res;
+          // setTimeout(() => {
+          //   this.show = false
+          // }, 1000);
+
+          this.$toast.show(res, 2000)
+
+        })
+
       }
     }
   }
