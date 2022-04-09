@@ -13,14 +13,12 @@ export default {
       }
     }  */
 
-    // 方法二：使用数组的find()方法,对比iid.
-    // 普通函数写法
-    // let oldProduct = state.cartList.find(function (item) {
-    //   return item.iid === product.iid
-    // })
-
     return new Promise((resolve, reject) => {
-      
+      // 方法二：使用数组的find()方法,对比iid.
+      // 普通函数写法
+      // let oldProduct = state.cartList.find(function (item) {
+      //   return item.iid === product.iid
+      // })
       // 箭头函数写法
       // 1. 查找之前数组中是否有该商品，通过iid
       let oldProduct = context.state.cartList.find(item => item.iid === payload.iid)
